@@ -39,6 +39,8 @@ export class ChatGateway {
 
     const history_chat = messages.map((m) => m.content);
 
+    console.log(history_chat);
+
     let answer = '';
     try {
       // 转发请求到上游 SSE 服务器
