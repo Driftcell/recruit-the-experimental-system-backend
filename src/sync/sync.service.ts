@@ -58,15 +58,32 @@ export class SyncService {
 
         const task = messages.map((message) => {
           return {
-            author: message.role === 'user' ? user.Profile.name : 'assistant',
+            author:
+              message.role === 'user'
+                ? user.Profile.extra['name']
+                : 'assistant',
             text: message.content,
           };
         });
 
-        let information = `Name: ${user.Profile.name}, Age: ${user.Profile.age}, Email: ${user.Profile.email}, Phone: ${user.Profile.phone}\n`;
-        for (const key of Object.keys(user.Profile.extra)) {
-          information += `${key}: ${user.Profile.extra[key]}\n`;
-        }
+        const extra = JSON.parse(user.Profile.extra.toString());
+        let { diagnosedConditions, currentIssues, desiredChanges } = extra;
+        diagnosedConditions = diagnosedConditions
+          .map((condition: { label: string }) => condition.label)
+          .join('、');
+        currentIssues = currentIssues
+          .map((condition: { label: string }) => condition.label)
+          .join('、');
+        desiredChanges = desiredChanges
+          .map((condition: { label: string }) => condition.label)
+          .join('、');
+        delete extra.diagnosedConditions;
+        delete extra.currentIssues;
+        delete extra.desiredChanges;
+
+        const information = Object.keys(extra)
+          .map((key) => `${key}: ${extra[key]}`)
+          .join('\n');
 
         task.unshift({
           author: 'system',

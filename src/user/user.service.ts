@@ -39,11 +39,14 @@ export class UserService {
   }
 
   async createProfile(id: string, createProfileDto: CreateProfileDto) {
-    return await this.prismaService.profile.create({
-      data: {
-        ...createProfileDto,
-        user: { connect: { id: id } },
+    return await this.prismaService.profile.upsert({
+      where: {
+        userId: id,
       },
+      update: {
+        ...createProfileDto,
+      },
+      create: { ...createProfileDto, user: { connect: { id: id } } },
     });
   }
 
