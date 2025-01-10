@@ -29,8 +29,7 @@ export class ChatService {
     await this.prismaService.message.create({
       data: {
         role: 'assistant',
-        content:
-          'hi~妈妈,我是你的专属智能健康助手小智，今天的心情怎么样？ 选项：开心/平和，压力/疲惫，焦虑/担忧，难过/悲伤，烦躁/愤怒，失望/失落，愧疚/羞耻，无奈/冷漠',
+        content: 'Hi~妈妈,我是你的专属智能健康助手小智，今天的心情怎么样？',
         chat: { connect: { id: chat.id } },
       },
     });
