@@ -15,6 +15,26 @@ export class ChatGateway {
   @WebSocketServer()
   server: Server;
 
+  @SubscribeMessage('insertMessage')
+  async insertMessage(
+    @MessageBody() data: { chatId: string; message: string; role: string },
+    @ConnectedSocket() client: Socket,
+  ) {
+    const { chatId, message, role } = data;
+    if (!chatId || !message || !role) {
+      client.emit('error', { message: 'chatId/role/message are required' });
+      return;
+    }
+
+    await this.prismaService.message.create({
+      data: {
+        chatId,
+        content: message,
+        role,
+      },
+    });
+  }
+
   @SubscribeMessage('startChat')
   async handleChat(
     @MessageBody() data: { chatId: string; message: string },
