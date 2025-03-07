@@ -26,13 +26,13 @@ export class ChatService {
     //     chat: { connect: { id: chat.id } },
     //   },
     // });
-    await this.prismaService.message.create({
-      data: {
-        role: 'assistant',
-        content: 'Hi~妈妈,我是你的专属智能健康助手小智，今天的心情怎么样？',
-        chat: { connect: { id: chat.id } },
-      },
-    });
+    // await this.prismaService.message.create({
+    //   data: {
+    //     role: 'assistant',
+    //     content: 'Hi~妈妈,我是你的专属智能健康助手小智，今天的心情怎么样？',
+    //     chat: { connect: { id: chat.id } },
+    //   },
+    // });
 
     return chat;
   }

@@ -57,11 +57,14 @@ export class ChatGateway {
       },
     });
 
-    const history_chat = messages.map((m) => m.content);
+    const history_chat = messages
+      .filter((m) => m.role !== 'tool')
+      .map((m) => m.content);
 
     console.log(history_chat);
 
     let answer = '';
+    let tools = [];
     try {
       // 转发请求到上游 SSE 服务器
       const sseUrl = process.env.MODEL_SERVER_URL;
@@ -70,11 +73,9 @@ export class ChatGateway {
         url: sseUrl,
         headers: { 'Content-Type': 'application/json' },
         data: {
-          status: 0,
-          uid: '',
-          cid: '',
           query: message,
           history_chat,
+          latest_passive_recognization: 20,
         },
         responseType: 'stream',
       });
@@ -88,14 +89,33 @@ export class ChatGateway {
             const jsonData = rawMessage.slice(5).trim(); // 去掉前缀并移除多余空格
             const parsedData = JSON.parse(jsonData); // 解析为 JSON
 
+            console.log(parsedData);
+
             // 转发解析后的数据给客户端
-            client.emit('chatUpdate', {
-              chatId,
-              data: {
-                delta: parsedData.answer,
-              },
-            });
-            answer += parsedData.answer;
+            if (
+              parsedData.mode === 1 ||
+              (parsedData.mode === 2 && parsedData.tool_list.length === 0)
+            ) {
+              client.emit('chatUpdate', {
+                chatId,
+                data: {
+                  delta: parsedData.model_answer,
+                },
+              });
+              answer += parsedData.model_answer;
+            }
+            if (
+              parsedData.mode === 3 ||
+              (parsedData.mode === 2 && parsedData.tool_list.length !== 0)
+            ) {
+              tools = parsedData.tool_list;
+              client.emit('toolSuggestion', {
+                chatId,
+                data: {
+                  tools: parsedData.tool_list,
+                },
+              });
+            }
           } else {
             console.warn('Unexpected message format:', rawMessage);
           }
@@ -113,13 +133,31 @@ export class ChatGateway {
             role: 'user',
           },
         });
-        await this.prismaService.message.create({
-          data: {
-            chatId,
-            content: answer,
-            role: 'assistant',
-          },
-        });
+        if (tools.length !== 0 && answer.length === 0) {
+          await this.prismaService.message.create({
+            data: {
+              chatId,
+              content: JSON.stringify(tools),
+              role: 'tool',
+            },
+          });
+          await this.prismaService.message.create({
+            data: {
+              chatId,
+              content: `已为您推荐以下工具：${tools.join('、')}。`,
+              role: 'assistant',
+            },
+          });
+        }
+        if (answer.length !== 0) {
+          await this.prismaService.message.create({
+            data: {
+              chatId,
+              content: answer,
+              role: 'assistant',
+            },
+          });
+        }
         client.emit('chatComplete', { chatId });
       });
 
